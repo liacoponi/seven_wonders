@@ -1,0 +1,79 @@
+cost	name	resource	gives free_1	gives_free_2	3	4	5	6	7	age	color
+	Lumber Yard	T			1	2	2	2	2	1	brown
+	Stone Pit	S			1	1	2	2	2	1	brown
+	Clay Pool	C			1	1	2	2	2	1	brown
+	Ore Vein	O			1	2	2	2	2	1	brown
+$	Tree Farm	T/C			0	0	0	1	1	1	brown
+$	Excavation	S/C			0	1	1	1	1	1	brown
+$	Clay Pit	C/O			1	1	1	1	1	1	brown
+$	Timber Yard	S/T			1	1	1	1	1	1	brown
+$	Forest Cave	T/O			0	0	1	1	1	1	brown
+$	Mine	O/S			0	0	0	1	1	1	brown
+	Loom	L			1	1	1	2	2	1	gray
+	Glassworks	G			1	1	1	2	2	1	gray
+	Press	P			1	1	1	2	2	1	gray
+	Pawnshop	VVV			0	1	1	1	2	1	blue
+S	Bathsarket	VVV	Aquaduct		1	1	1	1	2	1	blue
+	Altar	VV	Temple		1	1	2	2	2	1	blue
+	Theater	VV	Statue		1	1	1	2	2	1	blue
+	Tavern	$$$$$			0	1	2	2	3	1	yellow
+	East Trading Post	$/CSOW	Forum		1	1	1	1	2	1	yellow
+	West Trading Post	$/CSOW	Forum		1	1	1	1	2	1	yellow
+	Marketplace	$/LGP	Caravansery		1	1	1	2	2	1	yellow
+T	Stockade	X			1	1	1	1	2	1	red
+O	Barracks	X			1	1	2	2	2	1	red
+C	Guard Tower	X			1	2	2	2	2	1	red
+L	Apothocary	&	Stables	Dispensary	1	1	2	2	2	1	green
+G	Workshop	@	Archery Range	Laboratory	1	1	1	1	2	1	green
+P	Scriptorium	#	Courthouse	Library	1	2	2	2	2	1	green
+$	Sawmill	TT			1	2	2	2	2	2	brown
+$	Quarry	SS			1	2	2	2	2	2	brown
+$	Brickyard	CC			1	2	2	2	2	2	brown
+$	Foundry	OO			1	2	2	2	2	2	brown
+	Loom	L			1	1	2	2	2	2	gray
+	Glassworks	G			1	1	2	2	2	2	gray
+	Press	P			1	1	2	2	2	2	gray
+SSS	Aquaduct	VVVVV			1	1	1	1	2	2	blue
+TCG	Temple	VVV	Pantheon		1	1	1	2	2	2	blue
+TOO	Statue	VVVV	Gardens		1	1	1	1	2	2	blue
+CCL	Courthouse	VVVV			1	1	2	2	2	2	blue
+CC	Forum	L/G/P	Haven		1	1	1	2	3	2	yellow
+TT	Caravansery	C/S/O/T	Lighthouse		1	1	2	3	3	2	yellow
+	Vineyard	$/*			1	1	1	2	2	2	yellow
+	Bazaar	$$/*			0	1	1	1	2	2	yellow
+SSS	Walls	XX	Fortifications		1	1	1	1	2	2	red
+TOO	Training Ground	XX	Circus		0	1	1	2	3	2	red
+OCT	Stables	XX			1	1	2	2	2	2	red
+TTO	Archery Range	XX			1	1	1	2	2	2	red
+OOG	Dispensary	&	Arena	Lodge	1	2	2	2	2	2	green
+CCP	Laboratory	@	Siege Workshop	Observatory	1	1	2	2	2	2	green
+SSL	Library	#	Senate	University	1	1	1	2	2	2	green
+TP	School	#	Academy	Study	1	1	1	1	2	2	green
+OOCST	Workers									3	guild
+OOSS	Craftsmen									3	guild
+LPG	Traders									3	guild
+CCCLP	Philosophers									3	guild
+CCCG	Spies									3	guild
+OOSL	Strategists									3	guild
+TTTPG	Ship-owners									3	guild
+TTOOP	Scientists									3	guild
+TTTSL	Magistrates	V /*								3	guild
+SSCCG	Builders	V /*								3	guild
+CCOGPL	Pantheon	VVVVVVV			1	1	1	2	2	3	blue
+TCC	Gardens	VVVVV			1	2	2	2	2	3	blue
+GOSS	Town Hall	VVVVVV			1	1	2	3	3	3	blue
+GPLCTOS	Palace	VVVVVVVV			1	1	1	1	2	3	blue
+OSTT	Senate	VVVVVV			1	1	2	2	2	3	blue
+LOT	Haven	$V			1	2	2	2	2	3	yellow
+GS	Lighthouse	$V			1	1	1	2	2	3	yellow
+CCP	Chamber of Commerce	$$VV			0	1	1	2	2	3	yellow
+OSS	Arena	$$$VV			1	1	2	2	3	3	yellow
+SOOO	Fortifications	XXX			1	1	1	1	2	3	red
+SSSO	Circus	XXX			0	1	2	3	3	3	red
+OTTL	Arsenal	XXX			1	2	2	2	3	3	red
+TCCCC	Siege Workshop	XXX			1	1	2	2	2	3	red
+CCLP	Lodge	&			1	1	1	2	2	3	green
+OOGL	Observatory	@			1	1	1	1	2	3	green
+TTPG	University	#			1	2	2	2	2	3	green
+SSSG	Academy	&			1	1	1	1	2	3	green
+TPL	Study	@			1	1	2	2	2	3	green
