@@ -1,4 +1,5 @@
 import collections
+import itertools
 import random
 
 
@@ -14,8 +15,10 @@ class Player:
         self.resources = Resource()
         # List if resources from cards that give multiple excluding resources
         self.split_resources = []
+        self.split_resources_combinations = []
         self.victory_points = 0
         self.resources.initialize_resources()
+        pass
 
     def play_a_turn(self, players, deck):
         cards = deck + [self.wonder]
@@ -38,14 +41,14 @@ class Player:
         return self.deck
 
     def can_play(self, card, players):
-        # TODO: working on this
-        remaining_resources = self.resources - card.cost
-        if not remaining_resources.negative.values() or card in self.free_to_play:
-            return True
-        for split_resource in self.split_resources:
-            remaining_resources -= split_resource
-            if not remaining_resources.negative.values():
+        missing_resources = Resource((self.resources - card.cost).negative_items())
+        if card.name in self.free_to_play or not missing_resources:
                 return True
+        # Create a Resource instance for each possible combination of exclusive resources
+        for resource_comb in self.split_resources_combinations:
+            if not (missing_resources + resource_comb).negative_items():
+                return True
+
         # TODO: mark cards to buy and price, so that AI know they cost $
         # TODO: add Trading posts
         next_players = [players[(self.player_i-1) % len(players)].resources,
@@ -53,10 +56,11 @@ class Player:
         random.shuffle(next_players)
 
     def _play_a_card(self, card):
-        if card.is_split:
-            self.resources.append()
-
         self.resources += card.resources
+        if card.split_resources:
+            self.split_resources.append(card.split_resources)
+            self.split_resources_combinations = [Resource(''.join(resource_comb))
+                                                 for resource_comb in itertools.product(*self.split_resources)]
         # permanently remove the cost of cards in coin. Resources are not removed, since they reset every turn.
         self.resources['$'] -= card.cost['$']
         self.played_cards.append(card)
@@ -117,6 +121,16 @@ class Resource(collections.Counter):
         dict.update(self, [(k, 0) for k in self._resource_map.keys()])
         self['$'] = 4
 
+    def negative_items(self):
+        # returns all negative resources
+        return {k: v for k, v in self.items() if v < 0}
+
+    def validate_resource(self, other):
+        if not isinstance(other, collections.Counter):
+            return NotImplemented
+        if not set(other.keys()) <= set(self._resource_map.keys()):
+            raise ValueError(str(other.keys()) + ' are not valid resources\n')
+
     def __sub__(self, other):
         self.validate_resource(other)
         result = Resource()
@@ -149,45 +163,36 @@ class Resource(collections.Counter):
         items = ', '.join(map('%r: %r'.__mod__, sorted(self.items(), key=str)))
         return '{%s}' % items
 
-    def negative(self):
-        # returns all negative resources
-        return {k: v for k, v in self.items() if v < 0}
-
-    def validate_resource(self, other):
-        if not isinstance(other, collections.Counter):
-            return NotImplemented
-        if not set(other.keys()) <= set(self.keys()):
-            raise ValueError(str(other.keys()) + ' are not valid resources\n')
-
 
 class Card:
-    def __init__(self, ld, special=False):
-        if special:
-            pass
+    def __init__(self, ld=False):
         self.cost = Resource(ld[0])
         self.name = ld[1].strip()
-        self.resources = self.calculate_resources(ld[2])
+        self.resources = Resource()
+        self.split_resources = []
         self.gives_free = [val.strip() for val in ld[3:5] if val]
         self.cards_per_players = [int(val.strip()) for val in ld[5:10] if val]
         self.age = int(ld[10].strip())
         self.color = ld[11].strip()
+        self._calculate_resources(ld[2])
 
-    @staticmethod
-    def calculate_resources(resource_col):
-        if '/' in resource_col:
-            # return [Resource(resource) for resource in resource_col.split('/')]
-            return Resource(resource_col.split('/')[0].strip())
-        return Resource(resource_col)
+    def _calculate_resources(self, resource):
+        if '/' in resource:
+            self.split_resources = resource.split('/')
+        else:
+            self.resources = Resource(resource)
 
 
 class Wonder:
-    def __init__(self, name, side, init_cost, init_resources):
+    def __init__(self, name, side, wonder_resource):
         self.name = name
         self.side = side
         self.current_stage = 0
-        self.cost = init_cost
-        self.resources = init_resources
-        self.stages = [(init_cost, init_resources)]
+        self.split_resources = []
+        self.cost = Resource()
+        self.resources = wonder_resource
+        # (cost, resource) -> change this into a card? No, it's similar, but quite different. Not worth.
+        self.stages = [(Resource(), wonder_resource)]
 
     def __iter__(self):
         return self
@@ -201,5 +206,11 @@ class Wonder:
             raise StopIteration
         else:
             self.cost = self.stages[stage][0]
-        self.resources = self.stages[stage][1]
+        resource = self.stages[stage][1]
+        if '/' in resource:
+            self.split_resources = resource.split('/')
+            self.resources = Resource()
+        else:
+            self.split_resources = []
+            self.resources += resource
         self.current_stage += 1

@@ -17,9 +17,9 @@ S	Bathsarket	VVV	Aquaduct		1	1	1	1	2	1	blue
 	Altar	VV	Temple		1	1	2	2	2	1	blue
 	Theater	VV	Statue		1	1	1	2	2	1	blue
 	Tavern	$$$$$			0	1	2	2	3	1	yellow
-	East Trading Post	$/CSOW	Forum		1	1	1	1	2	1	yellow
-	West Trading Post	$/CSOW	Forum		1	1	1	1	2	1	yellow
-	Marketplace	$/LGP	Caravansery		1	1	1	2	2	1	yellow
+	East Trading Post		Forum		1	1	1	1	2	1	yellow
+	West Trading Post		Forum		1	1	1	1	2	1	yellow
+	Marketplace		Caravansery		1	1	1	2	2	1	yellow
 T	Stockade	X			1	1	1	1	2	1	red
 O	Barracks	X			1	1	2	2	2	1	red
 C	Guard Tower	X			1	2	2	2	2	1	red
@@ -39,8 +39,8 @@ TOO	Statue	VVVV	Gardens		1	1	1	1	2	2	blue
 CCL	Courthouse	VVVV			1	1	2	2	2	2	blue
 CC	Forum	L/G/P	Haven		1	1	1	2	3	2	yellow
 TT	Caravansery	C/S/O/T	Lighthouse		1	1	2	3	3	2	yellow
-	Vineyard	$/*			1	1	1	2	2	2	yellow
-	Bazaar	$$/*			0	1	1	1	2	2	yellow
+	Vineyard				1	1	1	2	2	2	yellow
+	Bazaar				0	1	1	1	2	2	yellow
 SSS	Walls	XX	Fortifications		1	1	1	1	2	2	red
 TOO	Training Ground	XX	Circus		0	1	1	2	3	2	red
 OCT	Stables	XX			1	1	2	2	2	2	red
@@ -57,8 +57,8 @@ CCCG	Spies									3	guild
 OOSL	Strategists									3	guild
 TTTPG	Ship-owners									3	guild
 TTOOP	Scientists									3	guild
-TTTSL	Magistrates	V /*								3	guild
-SSCCG	Builders	V /*								3	guild
+TTTSL	Magistrates									3	guild
+SSCCG	Builders									3	guild
 CCOGPL	Pantheon	VVVVVVV			1	1	1	2	2	3	blue
 TCC	Gardens	VVVVV			1	2	2	2	2	3	blue
 GOSS	Town Hall	VVVVVV			1	1	2	3	3	3	blue

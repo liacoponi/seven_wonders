@@ -49,10 +49,10 @@ def play(players, decks, wonders):
         players[0].military_tokens, players[-1].military_tokens = resolve_fight(players[0], players[-1], age)
         print()
 
-        for p in players:
-            print("Player %s: %s" % (p.name, p.resources))
+    for p in players:
+        print("Player %s:\n\tResources: %s\n\tSplit resources: %s" % (p.name, p.resources, p.split_resources))
 
-        calculate_victory_points(players)
+    calculate_victory_points(players)
 
 
 def calculate_victory_points(players):
@@ -146,10 +146,10 @@ def load_wonders(wonders_file):
             name = name + '_' + side
             if resources.endswith('()'):
                 resources = sw.Resource('V')
-            else:
+            elif '/' not in resources:
                 resources = sw.Resource(resources)
             if name not in wonders:
-                wonders[name] = sw.Wonder(name, side, cost, resources)
+                wonders[name] = sw.Wonder(name, side, resources)
             else:
                 wonders[name].stages.append((cost, resources))
     return [wonders[wonder] for wonder in wonders.keys()]
