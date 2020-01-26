@@ -18,51 +18,96 @@ class Player:
         self.split_resources_combinations = []
         self.victory_points = 0
         self.resources.initialize_resources()
-        pass
 
     def play_a_turn(self, players, deck):
         cards = deck + [self.wonder]
-        playable_cards = [card_i for card_i, card in enumerate(cards) if self.can_play(card, players)]
-        action, picked_card_i = self._pick_best_move(playable_cards, cards, players)
+        playable_cards = {}
+        # Create a dictionary of playable cards and their cost in terms of resources to buy from other players
+        for card_i, card in enumerate(cards):
+            can_buy_with_cost = self.can_play(card, players)
+            if can_buy_with_cost is not None:
+                playable_cards[card_i] = can_buy_with_cost
+        action, picked_card_i, picked_card_cost = self._pick_best_move(playable_cards, cards, players)
         picked_card = cards[picked_card_i]
         if action == 'coin':
             self.resources['$'] += 3
             self.actions.append('discarded ' + picked_card.name)
         elif action == 'wonder':
             next(self.wonder)
+            # TODO minor: this won't print split resources for Alexandria
             self.actions.append('activated stage %s of the wonder %s - %s' %
                                 (self.wonder.current_stage, self.wonder.name, self.wonder.resources))
-            self._play_a_card(self.wonder)
+            self._play_a_card(self.wonder, picked_card_cost)
         else:
-            self._play_a_card(picked_card)
-            self.actions.append('played %s - %s' % (picked_card.name, str(picked_card.resources)))
+            self._play_a_card(picked_card, picked_card_cost)
+            resource_to_print = str(picked_card.resources) if picked_card.resources else \
+                '/'.join(picked_card.split_resources)
+            self.actions.append('played %s - %s' % (picked_card.name, resource_to_print))
         print("player %s: %s" % (self.name, self.actions[-1]))
+        if picked_card_cost:
+            p1, p2 = picked_card_cost.keys()
+            players[p1].resources['$'] += picked_card_cost[p1]
+            players[p2].resources['$'] += picked_card_cost[p2]
         self.deck.pop(picked_card_i)
-        return self.deck
+        return self.deck, players
 
     def can_play(self, card, players):
-        missing_resources = Resource((self.resources - card.cost).negative_items())
+        gold_cost = dict()
+        missing_resources = (self.resources - card.cost).negative_items()
         if card.name in self.free_to_play or not missing_resources:
-                return True
-        # Create a Resource instance for each possible combination of exclusive resources
+            return gold_cost
+        # Check if we can pay missing resources with any split resource combination
+        resource_set_to_buy = []
         for resource_comb in self.split_resources_combinations:
-            if not (missing_resources + resource_comb).negative_items():
-                return True
+            missing_resource_after = (missing_resources + resource_comb).negative_items()
+            if not missing_resource_after:
+                return gold_cost
+            if missing_resource_after not in resource_set_to_buy:
+                resource_set_to_buy.append(Resource(missing_resource_after))
+        # Buy the resources from other players
+        # TODO Critical: add support for buying split resources
+        adjacent_players = [players[(self.player_i - 1) % len(players)],
+                            players[(self.player_i + 1) % len(players)]]
+        gold_cost_list = []
+        for resources_to_buy in resource_set_to_buy:
+            # Other players have the resources we need.
+            if not (resources_to_buy + adjacent_players[0].resources + adjacent_players[1].resources).negative_items():
+                # We buy semi-randomly from players. Adding a model would require too much work for little return.
+                random.shuffle(adjacent_players)
+                # If we were to buy from p1, whatever it's still negative in our resources is to buy from p2
+                to_buy_from_p2 = abs((resources_to_buy + adjacent_players[0].resources).negative_items())
+                to_buy_from_p1 = abs(to_buy_from_p2 + resources_to_buy)
+                cost_from_p1 = 0
+                cost_from_p2 = 0
+                for resource, value in to_buy_from_p1.items():
+                    # TODO Critical: add Trading posts
+                    if resource in ['blabla']:
+                        cost_from_p1 += value
+                    else:
+                        cost_from_p1 += value * 2
+                for resource, value in to_buy_from_p2.items():
+                    if resource in ['blabla']:
+                        cost_from_p2 += value
+                    else:
+                        cost_from_p2 += value * 2
+                if self.resources['$'] > cost_from_p1 + cost_from_p2:
+                    gold_cost[adjacent_players[0].player_i] = cost_from_p1
+                    gold_cost[adjacent_players[1].player_i] = cost_from_p2
+                    gold_cost_list.append(gold_cost)
 
-        # TODO: mark cards to buy and price, so that AI know they cost $
-        # TODO: add Trading posts
-        next_players = [players[(self.player_i-1) % len(players)].resources,
-                        players[(self.player_i+1) % len(players)].resources]
-        random.shuffle(next_players)
+        if gold_cost_list:
+            # TODO Major: sort by price
+            return gold_cost_list[0]
+        return None
 
-    def _play_a_card(self, card):
+    def _play_a_card(self, card, gold_cost):
         self.resources += card.resources
         if card.split_resources:
             self.split_resources.append(card.split_resources)
             self.split_resources_combinations = [Resource(''.join(resource_comb))
                                                  for resource_comb in itertools.product(*self.split_resources)]
         # permanently remove the cost of cards in coin. Resources are not removed, since they reset every turn.
-        self.resources['$'] -= card.cost['$']
+        self.resources['$'] -= card.cost['$'] + sum([v for v in gold_cost.values()])
         self.played_cards.append(card)
         # Wonders don't have gives_free attribute
         try:
@@ -75,11 +120,12 @@ class Player:
         """Return the index of the card to pick and an action."""
         if not playable_cards_i:
             # -2 to avoid choosing the wonder
-            return "coin", random.randint(0, len(cards)-2)
-        picked_card_i = random.choice(playable_cards_i)
+            return "coin", random.randint(0, len(cards) - 2), None
+        picked_card_i = random.choice(list(playable_cards_i.keys()))
+        cost = playable_cards_i[picked_card_i]
         if isinstance(cards[picked_card_i], Wonder):
-            return "wonder", random.randint(0, len(cards)-2)
-        return 'play', picked_card_i
+            return "wonder", random.randint(0, len(cards) - 2), cost
+        return 'play', picked_card_i, cost
 
 
 class GlobalState:
@@ -123,13 +169,16 @@ class Resource(collections.Counter):
 
     def negative_items(self):
         # returns all negative resources
-        return {k: v for k, v in self.items() if v < 0}
+        return Resource({k: v for k, v in self.items() if v < 0})
 
     def validate_resource(self, other):
         if not isinstance(other, collections.Counter):
             return NotImplemented
         if not set(other.keys()) <= set(self._resource_map.keys()):
             raise ValueError(str(other.keys()) + ' are not valid resources\n')
+
+    def __abs__(self):
+        return Resource({k: abs(v) for k, v in self.items()})
 
     def __sub__(self, other):
         self.validate_resource(other)

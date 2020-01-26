@@ -31,10 +31,11 @@ def play(players, decks, wonders):
         # until decks have one card left
         while len(player_decks[0]) > 1:
             # assign a deck to each player and play a card
-            for p_i, player in enumerate(players):
+            for p_i in range(len(players)):
+                player = players[p_i]
                 deck_i = (deck_index + p_i) % len(players)
                 player.deck = player_decks[deck_i]
-                player_decks[deck_i] = player.play_a_turn(players, player_decks[deck_i])
+                player_decks[deck_i], players = player.play_a_turn(players, player_decks[deck_i])
             # shift the decks to the right if it's age 2
             if age == 1:
                 deck_index += 1
