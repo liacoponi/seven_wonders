@@ -16,8 +16,8 @@ class Player:
         # List if resources from cards that give multiple excluding resources
         self.split_resources = []
         self.split_resources_combinations = []
-        self.victory_points = 0
         self.resources.initialize_resources()
+        self.adjacent_players_i = None
 
     def play_a_turn(self, players, deck):
         cards = deck + [self.wonder]
@@ -37,9 +37,9 @@ class Player:
             # TODO minor: this won't print split resources for Alexandria
             self.actions.append('activated stage %s of the wonder %s - %s' %
                                 (self.wonder.current_stage, self.wonder.name, self.wonder.resources))
-            self._play_a_card(self.wonder, picked_card_cost)
+            self._play_a_card(self.wonder, picked_card_cost, players)
         else:
-            self._play_a_card(picked_card, picked_card_cost)
+            self._play_a_card(picked_card, picked_card_cost, players)
             resource_to_print = str(picked_card.resources) if picked_card.resources else \
                 '/'.join(picked_card.split_resources)
             self.actions.append('played %s - %s' % (picked_card.name, resource_to_print))
@@ -65,9 +65,8 @@ class Player:
             if missing_resource_after not in resource_set_to_buy:
                 resource_set_to_buy.append(Resource(missing_resource_after))
         # Buy the resources from other players
-        # TODO Critical: add support for buying split resources
-        adjacent_players = [players[(self.player_i - 1) % len(players)],
-                            players[(self.player_i + 1) % len(players)]]
+        # TODO critical: add support for buying split resources
+        adjacent_players = [players[i] for i in self.adjacent_players_i]
         gold_cost_list = []
         played_cards_names = [c.name for c in self.played_cards]
         for resources_to_buy in resource_set_to_buy:
@@ -104,20 +103,35 @@ class Player:
             return sorted(gold_cost_list, key=lambda x: sum(x.values()))[0]
         return None
 
-    def _play_a_card(self, card, gold_cost):
-        self.resources += card.resources
-        if card.split_resources:
-            self.split_resources.append(card.split_resources)
-            self.split_resources_combinations = [Resource(''.join(resource_comb))
-                                                 for resource_comb in itertools.product(*self.split_resources)]
+    def _play_a_card(self, card, gold_cost, players):
         # permanently remove the cost of cards in coin. Resources are not removed, since they reset every turn.
         self.resources['$'] -= card.cost['$'] + sum([v for v in gold_cost.values()])
         self.played_cards.append(card)
-        # Wonders don't have gives_free attribute
-        try:
-            self.free_to_play += card.gives_free
-        except AttributeError:
+        self.free_to_play += card.gives_free
+
+        if card.type == 'yellow':
+            adjacent_players = [players[i] for i in self.adjacent_players_i]
+            if card.name == 'Vineyard':
+                self.resources['$'] += count_card_types('brown', adjacent_players)
+            elif card.name == 'Bazaar':
+                self.resources['$'] += count_card_types('gray', adjacent_players) * 2
+            elif card.name == 'Haven':
+                self.resources['$'] += count_card_types('brown', [self])
+            elif card.name == 'Lighthouse':
+                self.resources['$'] += count_card_types('yellow', [self])
+            elif card.name == 'Chamber of Commerce':
+                self.resources['$'] += count_card_types('gray', [self]) * 2
+            elif card.name == 'Arena':
+                self.resources['$'] += 3 * self.wonder.current_stage
+        # Guild cards don't give any resource
+        elif card.type == 'guild':
             pass
+        else:
+            self.resources += card.resources
+            if card.split_resources:
+                self.split_resources.append(card.split_resources)
+                self.split_resources_combinations = [Resource(''.join(resource_comb))
+                                                     for resource_comb in itertools.product(*self.split_resources)]
 
     @staticmethod
     def _pick_best_move(playable_cards_i, cards, players):
@@ -145,7 +159,7 @@ class Deck:
 
 
 class Resource(collections.Counter):
-    # TODO: Split usable resources from the rest?
+    # TODO trivial: split usable resources from the rest?
     _resource_map = {
         '$': 'Coins',
         'T': 'Timber',
@@ -218,16 +232,17 @@ class Resource(collections.Counter):
 
 
 class Card:
-    def __init__(self, ld=False):
+    def __init__(self, ld):
         self.cost = Resource(ld[0])
         self.name = ld[1].strip()
-        self.resources = Resource()
         self.split_resources = []
+        self.resources = Resource()
         self.gives_free = [val.strip() for val in ld[3:5] if val]
         self.cards_per_players = [int(val.strip()) for val in ld[5:10] if val]
         self.age = int(ld[10].strip())
-        self.color = ld[11].strip()
-        self._calculate_resources(ld[2])
+        self.type = ld[11].strip()
+        if not (self.type == "yellow" or self.type == 'guild'):
+            self._calculate_resources(ld[2])
 
     def _calculate_resources(self, resource):
         if '/' in resource:
@@ -239,11 +254,13 @@ class Card:
 class Wonder:
     def __init__(self, name, side, wonder_resource):
         self.name = name
+        self.gives_free = []
         self.side = side
         self.current_stage = 0
         self.split_resources = []
         self.cost = Resource()
         self.resources = wonder_resource
+        self.type = 'wonder'
         # (cost, resource) -> change this into a card? No, it's similar, but quite different. Not worth.
         self.stages = [(Resource(), wonder_resource)]
 
@@ -267,3 +284,7 @@ class Wonder:
             self.split_resources = []
             self.resources += resource
         self.current_stage += 1
+
+
+def count_card_types(type, players):
+    return sum([1 for player in players for card in player.played_cards if card.type == type])

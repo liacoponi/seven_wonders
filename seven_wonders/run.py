@@ -20,6 +20,8 @@ def play(players, decks, wonders):
         del wonders[random_wonder:random_wonder+2]
         p.resources += p.wonder.resources
         print("Player {}: {}".format(p.name, p.wonder.name))
+        p.adjacent_players_i = ((p.player_i - 1) % len(players),
+                              (p.player_i + 1) % len(players))
     for age, deck in enumerate(decks):
         print("\n** Beginning of age %s **" % str(age + 1))
         # create a deck for each player
@@ -57,7 +59,18 @@ def play(players, decks, wonders):
 
 
 def calculate_victory_points(players):
-    def calc_guilds(p):
+    def calc_commerce_vp(player):
+        vp = 0
+        played_cards_names = [c.name for c in player.played_cards]
+        if 'Haven' in played_cards_names:
+            vp += sw.count_card_types('brown', [player])
+        if 'Lighthouse' in played_cards_names:
+            vp = sw.count_card_types('yellow', [player])
+        if 'Haven' in played_cards_names:
+            vp += sw.count_card_types('gray', [player]) * 2
+        return vp
+
+    def calc_guilds_vp(players):
         return 0
 
     all_victory_points = dict()
@@ -68,10 +81,10 @@ def calculate_victory_points(players):
             'Treasury': p.resources['$'] // 3,
             'Wonder': p.resources['W'],
             'Blue cards': p.resources['V'],
-            'Commerce': sum([card.resources['V'] for card in p.played_cards if getattr(card, 'color', None) == 'yellow']),
+            'Commerce': calc_commerce_vp(p),
             'Science': p.resources['&'] ** 2 + p.resources['#'] ** 2 + p.resources['@'] +
                        7 * min([p.resources['&'], p.resources['#'], p.resources['@']]),
-            'Guilds': calc_guilds(p)
+            'Guilds': calc_guilds_vp(p)
         }
         victory_points['Total'] = sum(victory_points.values())
         formatted_points = ["\n{:>15}: {}".format(k, v) for k, v in victory_points.items()]

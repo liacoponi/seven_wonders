@@ -39,8 +39,8 @@ TOO	Statue	VVVV	Gardens		1	1	1	1	2	2	blue
 CCL	Courthouse	VVVV			1	1	2	2	2	2	blue
 CC	Forum	L/G/P	Haven		1	1	1	2	3	2	yellow
 TT	Caravansery	C/S/O/T	Lighthouse		1	1	2	3	3	2	yellow
-	Vineyard				1	1	1	2	2	2	yellow
-	Bazaar				0	1	1	1	2	2	yellow
+	Vineyard	> $ for each brown <^>			1	1	1	2	2	2	yellow
+	Bazaar	> $$ for each gray <^>			0	1	1	1	2	2	yellow
 SSS	Walls	XX	Fortifications		1	1	1	1	2	2	red
 TOO	Training Ground	XX	Circus		0	1	1	2	3	2	red
 OCT	Stables	XX			1	1	2	2	2	2	red
@@ -64,10 +64,10 @@ TCC	Gardens	VVVVV			1	2	2	2	2	3	blue
 GOSS	Town Hall	VVVVVV			1	1	2	3	3	3	blue
 GPLCTOS	Palace	VVVVVVVV			1	1	1	1	2	3	blue
 OSTT	Senate	VVVVVV			1	1	2	2	2	3	blue
-LOT	Haven	$V			1	2	2	2	2	3	yellow
-GS	Lighthouse	$V			1	1	1	2	2	3	yellow
-CCP	Chamber of Commerce	$$VV			0	1	1	2	2	3	yellow
-OSS	Arena	$$$VV			1	1	2	2	3	3	yellow
+LOT	Haven	> $V for each brown ^			1	2	2	2	2	3	yellow
+GS	Lighthouse	> $V for each yellow ^			1	1	1	2	2	3	yellow
+CCP	Chamber of Commerce	> $$VV for each gray ^			0	1	1	2	2	3	yellow
+OSS	Arena	> $$$V for each  completed wonder stage			1	1	2	2	3	3	yellow
 SOOO	Fortifications	XXX			1	1	1	1	2	3	red
 SSSO	Circus	XXX			0	1	2	3	3	3	red
 OTTL	Arsenal	XXX			1	2	2	2	3	3	red
