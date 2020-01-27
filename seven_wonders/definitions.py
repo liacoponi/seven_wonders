@@ -69,6 +69,7 @@ class Player:
         adjacent_players = [players[(self.player_i - 1) % len(players)],
                             players[(self.player_i + 1) % len(players)]]
         gold_cost_list = []
+        played_cards_names = [c.name for c in self.played_cards]
         for resources_to_buy in resource_set_to_buy:
             # Other players have the resources we need.
             if not (resources_to_buy + adjacent_players[0].resources + adjacent_players[1].resources).negative_items():
@@ -80,13 +81,16 @@ class Player:
                 cost_from_p1 = 0
                 cost_from_p2 = 0
                 for resource, value in to_buy_from_p1.items():
-                    # TODO Critical: add Trading posts
-                    if resource in ['blabla']:
+                    if (resource in 'TSCO' and 'West Trading Post' in played_cards_names) or \
+                            (resource in 'LGP' and 'Marketplace' in played_cards_names) or \
+                            ('Olympia_B' in played_cards_names):
                         cost_from_p1 += value
                     else:
                         cost_from_p1 += value * 2
                 for resource, value in to_buy_from_p2.items():
-                    if resource in ['blabla']:
+                    if (resource in 'TSCO' and 'East Trading Post' in played_cards_names) or \
+                            (resource in 'LGP' and 'Marketplace' in played_cards_names) or \
+                            ('Olympia_B' in played_cards_names):
                         cost_from_p2 += value
                     else:
                         cost_from_p2 += value * 2
@@ -96,8 +100,8 @@ class Player:
                     gold_cost_list.append(gold_cost)
 
         if gold_cost_list:
-            # TODO Major: sort by price
-            return gold_cost_list[0]
+            # Return the cheapest set of trades
+            return sorted(gold_cost_list, key=lambda x: sum(x.values()))[0]
         return None
 
     def _play_a_card(self, card, gold_cost):
