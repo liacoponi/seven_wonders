@@ -59,6 +59,21 @@ def play(players, decks, wonders):
 
 
 def calculate_victory_points(players):
+    def calc_science_vp(player):
+        def science_formula(resources):
+            return (resources['&'] ** 2 + resources['#'] ** 2 + resources['@'] ** 2 +
+            7 * min([resources['&'], resources['#'], resources['@']]))
+
+        p_resources = player.resources
+        if 'Scientists' in [c.name for c in player.played_cards]:
+            resource_candidates = []
+            for symbol in ['&', '#', '@']:
+                tmp_resources = p_resources
+                tmp_resources[symbol] += 1
+                resource_candidates.append(science_formula(tmp_resources))
+            return sorted(resource_candidates)[-1]
+        return science_formula(p_resources)
+
     def calc_commerce_vp(player):
         vp = 0
         played_cards_names = [c.name for c in player.played_cards]
@@ -70,21 +85,41 @@ def calculate_victory_points(players):
             vp += sw.count_card_types('gray', [player]) * 2
         return vp
 
-    def calc_guilds_vp(players):
-        return 0
+    def calc_guilds_vp(this_player, all_players):
+        vp = 0
+        adjacent_players = [all_players[i] for i in this_player.adjacent_players_i]
+        played_cards_names = [c.name for c in this_player.played_cards]
+        if 'Workers' in played_cards_names:
+            vp += sw.count_card_types('brown', adjacent_players)
+        if 'Craftsmen' in played_cards_names:
+            vp += sw.count_card_types('gray', adjacent_players) * 2
+        if 'Traders' in played_cards_names:
+            vp += sw.count_card_types('yellow', adjacent_players)
+        if 'Philosophers' in played_cards_names:
+            vp += sw.count_card_types('green', adjacent_players)
+        if 'Spies' in played_cards_names:
+            vp += sw.count_card_types('red', adjacent_players)
+        if 'Magistrates' in played_cards_names:
+            vp += sw.count_card_types('blue', adjacent_players)
+        if 'Strategists' in played_cards_names:
+            vp += sum([1 for player in adjacent_players for token in player.military_tokens if token == -1])
+        if 'Ship-owners' in played_cards_names:
+            vp += sum([1 for card in this_player.played_cards if card.type in ['brown', 'gray', 'guild']])
+        if 'Builders' in played_cards_names:
+            vp += sum([player.wonder.current_stage for player in players])
+        return vp
 
     all_victory_points = dict()
     print("\n** Victory Points **")
     for p in players:
         victory_points = {
-            'Military': p.military_tokens,
+            'Military': sum(p.military_tokens),
             'Treasury': p.resources['$'] // 3,
             'Wonder': p.resources['W'],
             'Blue cards': p.resources['V'],
             'Commerce': calc_commerce_vp(p),
-            'Science': p.resources['&'] ** 2 + p.resources['#'] ** 2 + p.resources['@'] +
-                       7 * min([p.resources['&'], p.resources['#'], p.resources['@']]),
-            'Guilds': calc_guilds_vp(p)
+            'Science': calc_science_vp(p),
+            'Guilds': calc_guilds_vp(p, players)
         }
         victory_points['Total'] = sum(victory_points.values())
         formatted_points = ["\n{:>15}: {}".format(k, v) for k, v in victory_points.items()]
@@ -100,12 +135,12 @@ def resolve_fight(fighter_one, fighter_two, age):
     print("%s vs %s:" % (fighter_one.name, fighter_two.name), end=' ')
     if fighter_one.resources['X'] > fighter_two.resources['X']:
         # The formula gives 1, 3 and 5 victory points for age 1, 2, 3
-        fighter_one.military_tokens += 1 + age * 2
-        fighter_two.military_tokens -= 1
+        fighter_one.military_tokens.append(1 + age * 2)
+        fighter_two.military_tokens.append(-1)
         print(fighter_one.name + " wins")
     elif fighter_one.resources['X'] < fighter_two.resources['X']:
-        fighter_two.military_tokens += 1 + age * 2
-        fighter_one.military_tokens -= 1
+        fighter_one.military_tokens.append(1 + age * 2)
+        fighter_two.military_tokens.append(-1)
         print(fighter_two.name + " wins")
     else:
         print('draw!')

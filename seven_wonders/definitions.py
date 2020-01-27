@@ -9,7 +9,7 @@ class Player:
         self.actions = []
         self.coins = 3
         self.free_to_play = []
-        self.military_tokens = 0
+        self.military_tokens = []
         self.played_cards = []
         self.player_i = 0
         self.resources = Resource()
@@ -54,6 +54,8 @@ class Player:
     def can_play(self, card, players):
         gold_cost = dict()
         missing_resources = (self.resources - card.cost).negative_items()
+        if card.name in [c.name for c in self.played_cards]:
+            return None
         if card.name in self.free_to_play or not missing_resources:
             return gold_cost
         # Check if we can pay missing resources with any split resource combination
