@@ -6,14 +6,20 @@ import os
 
 def main(no_of_players=4, card_file='cards.tsv', wonder_file='wonders.tsv'):
     wonders = load_wonders(wonder_file)
-    players = [sw.Player(str(player)) for player in range(no_of_players)]
     deck = populate_decks(load_cards(card_file), no_of_players)
-    while 1:
-        play(players.copy(), deck.copy(), wonders.copy())
+    while True:
+        players = [sw.Player(str(player)) for player in range(no_of_players)]
+        try:
+            play(players, deck, wonders)
+        except KeyboardInterrupt:
+            pass
 
 
-def play(players, decks, wonders):
-    print("** Wonders **")
+def play(players, original_deck, original_wonders):
+    sw.discarded_cards = []
+    deck = original_deck[:]
+    wonders = original_wonders[:]
+    print("\n** Wonders **")
     for i, p in enumerate(players):
         p.player_i = i
         random.shuffle(wonders)
@@ -24,12 +30,12 @@ def play(players, decks, wonders):
         print("Player {}: {}".format(p.name, p.wonder.name))
         p.adjacent_players_i = ((p.player_i - 1) % len(players),
                               (p.player_i + 1) % len(players))
-    for age, deck in enumerate(decks):
+    for age, hand in enumerate(deck):
         print("\n** Beginning of age %s **" % str(age + 1))
         # create a deck for each player
-        random.shuffle(deck)
-        cards_per_deck = int(len(deck) / len(players))
-        player_decks = [deck[cards_per_deck * i:cards_per_deck * (i + 1)] for i in range(0, len(players))]
+        random.shuffle(hand)
+        cards_per_deck = int(len(hand) / len(players))
+        player_decks = [hand[cards_per_deck * i:cards_per_deck * (i + 1)] for i in range(0, len(players))]
         # Index used to track deck->player map. If it's 1, then p1 plays first, then p2 second, etc.
         deck_index = 0
         # until decks have one card left
@@ -129,10 +135,10 @@ def calculate_victory_points(players):
         }
         if p.wonder.specials['copy_guild_card']:
             highest_vp_guilds = []
-            for adjacent_player in adjacent_players:
-                adj_adjacent_players = [players[i] for i in adjacent_player.adjacent_players_i]
-                highest_vp_guilds.append(sorted([calc_guilds_vp(adjacent_player, adj_adjacent_players)]))
-            p.victory_points['Copied Guild: '] = sorted(highest_vp_guilds)[-1]
+            for adj_p in adjacent_players:
+                adj_adj_p = [players[i] for i in adj_p.adjacent_players_i]
+                highest_vp_guilds += [vp for vp in calc_guilds_vp(adj_p, adj_adj_p)]
+            p.victory_points['Copied Guild: '] = sorted(highest_vp_guilds)[-1] if highest_vp_guilds else 0
         p.victory_points['Total'] = sum(p.victory_points.values())
         formatted_points = ["\n{:>15}: {}".format(k, v) for k, v in p.victory_points.items()]
         print("\nPlayer %s:%s" % (p.name, ''.join(formatted_points)))

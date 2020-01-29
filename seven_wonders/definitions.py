@@ -62,7 +62,8 @@ class Player:
             for card in discarded_cards.copy():
                 card.cost = Resource()
             self.wonder.specials['play_discarded_card'] = False
-            self.play_a_turn(players, discarded_cards)
+            if discarded_cards:
+                self.play_a_turn(players, discarded_cards)
         if len(hand) == 1 and self.wonder.specials['play_seventh']:
             hand[0].cost = Resource()
             self.play_a_turn(players, hand)
@@ -172,11 +173,6 @@ class Player:
         if isinstance(cards[picked_card_i], Wonder):
             return "wonder", random.randint(0, max(len(cards) - 2, 0)), cost
         return 'play', picked_card_i, cost
-
-
-class Deck:
-    def __init__(self):
-        pass
 
 
 class Resource(collections.Counter):

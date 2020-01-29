@@ -1,5 +1,7 @@
 Revise code
 Revise cards
+Add card descriptions
+Better printint (use log)
 decouple run.py
 Implement stats
 Implement Human
