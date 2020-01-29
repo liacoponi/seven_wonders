@@ -3,6 +3,9 @@ import itertools
 import random
 
 
+discarded_cards = []
+
+
 class Player:
     def __init__(self, name):
         self.name = name
@@ -18,38 +21,52 @@ class Player:
         self.split_resources_combinations = []
         self.resources.initialize_resources()
         self.adjacent_players_i = None
+        self.victory_points = dict()
 
-    def play_a_turn(self, players, deck):
-        cards = deck + [self.wonder]
+    def play_a_turn(self, players, hand):
+        cards = hand + [self.wonder] if not self.wonder.is_last_stage else hand
         playable_cards = {}
         # Create a dictionary of playable cards and their cost in terms of resources to buy from other players
         for card_i, card in enumerate(cards):
-            can_buy_with_cost = self.can_play(card, players)
-            if can_buy_with_cost is not None:
-                playable_cards[card_i] = can_buy_with_cost
+            can_buy_and_cost = self.can_play(card, players)
+            if can_buy_and_cost is not None:
+                playable_cards[card_i] = can_buy_and_cost
         action, picked_card_i, picked_card_cost = self._pick_best_move(playable_cards, cards, players)
         picked_card = cards[picked_card_i]
         if action == 'coin':
             self.resources['$'] += 3
             self.actions.append('discarded ' + picked_card.name)
+            discarded_cards.append(card)
         elif action == 'wonder':
             next(self.wonder)
             # TODO minor: this won't print split resources for Alexandria
             self.actions.append('activated stage %s of the wonder %s - %s' %
                                 (self.wonder.current_stage, self.wonder.name, self.wonder.resources))
             self._play_a_card(self.wonder, picked_card_cost, players)
+        # Play a normal card
         else:
             self._play_a_card(picked_card, picked_card_cost, players)
             resource_to_print = str(picked_card.resources) if picked_card.resources else \
                 '/'.join(picked_card.split_resources)
             self.actions.append('played %s - %s' % (picked_card.name, resource_to_print))
         print("player %s: %s" % (self.name, self.actions[-1]))
+        # Pay players for trading
         if picked_card_cost:
             p1, p2 = picked_card_cost.keys()
             players[p1].resources['$'] += picked_card_cost[p1]
             players[p2].resources['$'] += picked_card_cost[p2]
-        self.deck.pop(picked_card_i)
-        return self.deck, players
+        hand.pop(picked_card_i)
+
+        # Play some wonder specials
+        if self.wonder.specials['play_discarded_card']:
+            for card in discarded_cards.copy():
+                card.cost = Resource()
+            self.wonder.specials['play_discarded_card'] = False
+            self.play_a_turn(players, discarded_cards)
+        if len(hand) == 1 and self.wonder.specials['play_seventh']:
+            hand[0].cost = Resource()
+            self.play_a_turn(players, hand)
+        return hand, players
 
     def can_play(self, card, players):
         gold_cost = dict()
@@ -67,7 +84,7 @@ class Player:
             if missing_resource_after not in resource_set_to_buy:
                 resource_set_to_buy.append(Resource(missing_resource_after))
         # Buy the resources from other players
-        # TODO critical: add support for buying split resources
+        # TODO critical: add support for buying from split resource cards
         adjacent_players = [players[i] for i in self.adjacent_players_i]
         gold_cost_list = []
         played_cards_names = [c.name for c in self.played_cards]
@@ -84,14 +101,14 @@ class Player:
                 for resource, value in to_buy_from_p1.items():
                     if (resource in 'TSCO' and 'West Trading Post' in played_cards_names) or \
                             (resource in 'LGP' and 'Marketplace' in played_cards_names) or \
-                            ('Olympia_B' in played_cards_names):
+                            self.wonder.specials['trading_post']:
                         cost_from_p1 += value
                     else:
                         cost_from_p1 += value * 2
                 for resource, value in to_buy_from_p2.items():
                     if (resource in 'TSCO' and 'East Trading Post' in played_cards_names) or \
                             (resource in 'LGP' and 'Marketplace' in played_cards_names) or \
-                            ('Olympia_B' in played_cards_names):
+                            self.wonder.specials['trading_post']:
                         cost_from_p2 += value
                     else:
                         cost_from_p2 += value * 2
@@ -125,34 +142,36 @@ class Player:
                 self.resources['$'] += count_card_types('gray', [self]) * 2
             elif card.name == 'Arena':
                 self.resources['$'] += 3 * self.wonder.current_stage
+
         # Guild cards don't give any resource
         elif card.type == 'guild':
-            pass
-        else:
-            self.resources += card.resources
-            if card.split_resources:
-                self.split_resources.append(card.split_resources)
-                self.split_resources_combinations = [Resource(''.join(resource_comb))
-                                                     for resource_comb in itertools.product(*self.split_resources)]
+            return True
 
-    @staticmethod
-    def _pick_best_move(playable_cards_i, cards, players):
+        elif card.type == 'wonder':
+            # This wonder stage triggers a special ability
+            if isinstance(card.resources, str):
+                self.wonder.specials[card.resources] = True
+                return True
+
+        self.resources += card.resources
+        if card.split_resources:
+            self.split_resources.append(card.split_resources)
+            self.split_resources_combinations = [Resource(''.join(resource_comb))
+                                                 for resource_comb in itertools.product(*self.split_resources)]
+
+    def _pick_best_move(self, playable_cards_i, cards, players):
         """Return the index of the card to pick and an action."""
+        if self.wonder.specials['build_free_structure']:
+            playable_cards_i = {i: {} for i in range(max(len(cards) - 2, 0))}
+            self.wonder.specials['build_free_structure'] = False
         if not playable_cards_i:
             # -2 to avoid choosing the wonder
-            return "coin", random.randint(0, len(cards) - 2), None
+            return "coin", random.randint(0, max(len(cards) - 2, 0)), None
         picked_card_i = random.choice(list(playable_cards_i.keys()))
         cost = playable_cards_i[picked_card_i]
         if isinstance(cards[picked_card_i], Wonder):
-            return "wonder", random.randint(0, len(cards) - 2), cost
+            return "wonder", random.randint(0, max(len(cards) - 2, 0)), cost
         return 'play', picked_card_i, cost
-
-
-class GlobalState:
-    def __init__(self, players):
-        self.players = [Player(player) for player in players]
-        self.player_turn = 0
-        self.number_of_turns = 0
 
 
 class Deck:
@@ -256,6 +275,14 @@ class Card:
 class Wonder:
     def __init__(self, name, side, wonder_resource):
         self.name = name
+        self.specials = {
+            'play_discarded_card': False,
+            'trading_post': False,
+            'copy_guild_card': False,
+            'build_free_structure': False,
+            'play_seventh': False
+        }
+        self.is_last_stage = False
         self.gives_free = []
         self.side = side
         self.current_stage = 0
@@ -263,7 +290,7 @@ class Wonder:
         self.cost = Resource()
         self.resources = wonder_resource
         self.type = 'wonder'
-        # (cost, resource) -> change this into a card? No, it's similar, but quite different. Not worth.
+        # Don't change this into a card, it's similar, but quite different. Not worth.
         self.stages = [(Resource(), wonder_resource)]
 
     def __iter__(self):
@@ -273,7 +300,7 @@ class Wonder:
         stage = self.current_stage + 1
         # Last stage, hack so that the card cannot be played
         if stage == len(self.stages) - 1:
-            self.cost = collections.Counter('T' * 99)
+            self.is_last_stage = True
         elif stage > len(self.stages):
             raise StopIteration
         else:
@@ -284,9 +311,9 @@ class Wonder:
             self.resources = Resource()
         else:
             self.split_resources = []
-            self.resources += resource
+            self.resources = resource
         self.current_stage += 1
 
 
-def count_card_types(type, players):
-    return sum([1 for player in players for card in player.played_cards if card.type == type])
+def count_card_types(card_type, players):
+    return sum([1 for player in players for card in player.played_cards if card.type == card_type])

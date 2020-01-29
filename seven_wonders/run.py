@@ -7,18 +7,20 @@ import os
 def main(no_of_players=4, card_file='cards.tsv', wonder_file='wonders.tsv'):
     wonders = load_wonders(wonder_file)
     players = [sw.Player(str(player)) for player in range(no_of_players)]
-    decks = populate_decks(load_cards(card_file), no_of_players)
-    play(players, decks, wonders)
+    deck = populate_decks(load_cards(card_file), no_of_players)
+    while 1:
+        play(players.copy(), deck.copy(), wonders.copy())
 
 
 def play(players, decks, wonders):
     print("** Wonders **")
     for i, p in enumerate(players):
         p.player_i = i
-        random_wonder = random.randint(0, 7)
-        p.wonder = iter(wonders[random_wonder + random.randint(0, 1)])
-        del wonders[random_wonder:random_wonder+2]
-        p.resources += p.wonder.resources
+        random.shuffle(wonders)
+        p.wonder = iter(wonders[random.randint(0, 1)])
+        del wonders[0:2]
+        if not isinstance(p.wonder.resources, str):
+            p.resources += p.wonder.resources
         print("Player {}: {}".format(p.name, p.wonder.name))
         p.adjacent_players_i = ((p.player_i - 1) % len(players),
                               (p.player_i + 1) % len(players))
@@ -85,46 +87,56 @@ def calculate_victory_points(players):
             vp += sw.count_card_types('gray', [player]) * 2
         return vp
 
-    def calc_guilds_vp(this_player, all_players):
-        vp = 0
-        adjacent_players = [all_players[i] for i in this_player.adjacent_players_i]
+    def calc_guilds_vp(this_player, adjacent_players):
+        vp = []
         played_cards_names = [c.name for c in this_player.played_cards]
         if 'Workers' in played_cards_names:
-            vp += sw.count_card_types('brown', adjacent_players)
+            vp.append(sw.count_card_types('brown', adjacent_players))
         if 'Craftsmen' in played_cards_names:
-            vp += sw.count_card_types('gray', adjacent_players) * 2
+            vp.append(sw.count_card_types('gray', adjacent_players) * 2)
         if 'Traders' in played_cards_names:
-            vp += sw.count_card_types('yellow', adjacent_players)
+            vp.append(sw.count_card_types('yellow', adjacent_players))
         if 'Philosophers' in played_cards_names:
-            vp += sw.count_card_types('green', adjacent_players)
+            vp.append(sw.count_card_types('green', adjacent_players))
         if 'Spies' in played_cards_names:
-            vp += sw.count_card_types('red', adjacent_players)
+            vp.append(sw.count_card_types('red', adjacent_players))
         if 'Magistrates' in played_cards_names:
-            vp += sw.count_card_types('blue', adjacent_players)
+            vp.append(sw.count_card_types('blue', adjacent_players))
         if 'Strategists' in played_cards_names:
-            vp += sum([1 for player in adjacent_players for token in player.military_tokens if token == -1])
+            vp.append(sum([1 for player in adjacent_players for token in player.military_tokens if token == -1]))
         if 'Ship-owners' in played_cards_names:
-            vp += sum([1 for card in this_player.played_cards if card.type in ['brown', 'gray', 'guild']])
+            vp.append(sum([1 for card in this_player.played_cards if card.type in ['brown', 'gray', 'guild']]))
         if 'Builders' in played_cards_names:
-            vp += sum([player.wonder.current_stage for player in players])
+            vp.append(sum([player.wonder.current_stage for player in players]))
         return vp
 
     all_victory_points = dict()
     print("\n** Victory Points **")
+    # We do it in two loops to use copy_guild_cards, not very elegant, but works fine.
     for p in players:
-        victory_points = {
+        adjacent_players = [players[i] for i in p.adjacent_players_i]
+        p.victory_points['Guilds']: sum(calc_guilds_vp(p, adjacent_players))
+
+    for p in players:
+        adjacent_players = [players[i] for i in p.adjacent_players_i]
+        p.victory_points = {
             'Military': sum(p.military_tokens),
             'Treasury': p.resources['$'] // 3,
             'Wonder': p.resources['W'],
             'Blue cards': p.resources['V'],
             'Commerce': calc_commerce_vp(p),
             'Science': calc_science_vp(p),
-            'Guilds': calc_guilds_vp(p, players)
         }
-        victory_points['Total'] = sum(victory_points.values())
-        formatted_points = ["\n{:>15}: {}".format(k, v) for k, v in victory_points.items()]
+        if p.wonder.specials['copy_guild_card']:
+            highest_vp_guilds = []
+            for adjacent_player in adjacent_players:
+                adj_adjacent_players = [players[i] for i in adjacent_player.adjacent_players_i]
+                highest_vp_guilds.append(sorted([calc_guilds_vp(adjacent_player, adj_adjacent_players)]))
+            p.victory_points['Copied Guild: '] = sorted(highest_vp_guilds)[-1]
+        p.victory_points['Total'] = sum(p.victory_points.values())
+        formatted_points = ["\n{:>15}: {}".format(k, v) for k, v in p.victory_points.items()]
         print("\nPlayer %s:%s" % (p.name, ''.join(formatted_points)))
-        all_victory_points[p.name] = victory_points['Total']
+        all_victory_points[p.name] = p.victory_points['Total']
 
     print("\n**Ranking**",
           ''.join(["\n\tPlayer {}: {}".format(k, v) for k, v
@@ -193,8 +205,8 @@ def load_wonders(wonders_file):
                 raise ValueError('invalid line: ' + str(line))
             cost = sw.Resource(cost)
             name = name + '_' + side
-            if resources.endswith('()'):
-                resources = sw.Resource('V')
+            if resources.startswith('>'):
+                resources = resources[1:]
             elif '/' not in resources:
                 resources = sw.Resource(resources)
             if name not in wonders:

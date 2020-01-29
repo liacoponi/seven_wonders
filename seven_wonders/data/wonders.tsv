@@ -6,7 +6,7 @@ Rhodes	CCC	XX	2	A
 Rhodes	OOOO	VVVVVVV	3	A
 Rhodes	SSS	XVVV$$$	1	B
 Rhodes	OOOO	XVVVV$$$$	2	B
-
+				
 Alexandria		G	A	A
 Alexandria		G	A	B
 Alexandria	SS	VVV	1	A
@@ -15,7 +15,7 @@ Alexandria	GG	VVVVVVV	3	A
 Alexandria	CC	T/O/C/S	1	B
 Alexandria	TT	&/#/@	2	B
 Alexandria	SSS	VVVVVVVV	3	B
-
+				
 Ephesus		P	A	A
 Ephesus		P	A	B
 Ephesus	SS	VVV	1	B
@@ -24,34 +24,34 @@ Ephesus	PP	VVVVVVV	3	A
 Ephesus	SS	VV$$$$	1	B
 Ephesus	TT	VVV$$$$	2	B
 Ephesus	&#@	VVVVV$$$$	3	B
-
+				
 Babylon		C	A	A
 Babylon		C	A	B
 Babylon	CC	VVV	1	A
 Babylon	TTT	&/#/@	2	A
 Babylon	CCCC	VVVVVVV	3	A
 Babylon	LC	VVV	1	B
-Babylon	GTT	free_card()	2	B
+Babylon	GTT	>play_seventh	2	B
 Babylon	CCCP	&/#/@	3	B
-
+				
 Olympia		T	A	A
 Olympia		T	A	B
 Olympia	TT	VVV	1	A
-Olympia	SS	free_card()	2	A
+Olympia	SS	>build_free_structure	2	A
 Olympia	OO	VVVVVVV	3	A
-Olympia	TT	trade_lr()	1	B
+Olympia	TT	>trading_post	1	B
 Olympia	SS	VVVVV	2	B
-Olympia	OOL	copy_guild()	3	B
-
+Olympia	OOL	>copy_guild_card	3	B
+				
 Halicarnassus		L	A	A
 Halicarnassus		L	A	B
 Halicarnassus	CC	VVV	1	A
-Halicarnassus	OO	play_discarded()	2	A
+Halicarnassus	OO	>play_discarded_card	2	A
 Halicarnassus	LL	VVVVVVV	3	A
-Halicarnassus	OO	play_discarded()	1	B
-Halicarnassus	CCC	play_discarded()	2	B
-Halicarnassus	&#@	play_discarded()	3	B
-
+Halicarnassus	OO	>play_discarded_card	1	B
+Halicarnassus	CCC	>play_discarded_card	2	B
+Halicarnassus	&#@	>play_discarded_card	3	B
+				
 Giza		S	A	A
 Giza		S	A	B
 Giza	SS	VVV	1	A
